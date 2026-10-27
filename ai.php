@@ -6,7 +6,7 @@ $plan=[];foreach($S as $d=>$s){$cs->execute([$d]);$comp=(float)$cs->fetchColumn(
  foreach($types as $t){$cur->execute([$t['id'],$d]);$c=$cur->fetchColumn();$c=$c!==false?$c:$t['base_rate'];
   [$sg,$why]=suggest($t,$d,$s['bt'][$t['id']]??0,$comp);$plan[]=['d'=>$d,'t'=>$t,'cur'=>$c,'sg'=>$sg,'why'=>$why];}}
 if($_SERVER['REQUEST_METHOD']=='POST'&&csrf_ok()){
- if(isset($_POST['apply'])){$q=$db->prepare('REPLACE INTO rates(room_type_id,rate_date,rate) VALUES(?,?,?)');foreach($plan as $p)$q->execute([$p['t']['id'],$p['d'],$p['sg']]);header('Location: ai.php');exit;}
+ if(isset($_POST['apply'])){$q=$db->prepare('INSERT INTO rates(room_type_id,rate_date,rate) VALUES(?,?,?) ON CONFLICT (room_type_id,rate_date) DO UPDATE SET rate=EXCLUDED.rate');foreach($plan as $p)$q->execute([$p['t']['id'],$p['d'],$p['sg']]);header('Location: ai.php');exit;}
  if(isset($_POST['narrate'])){header('Content-Type: application/json');
   if(!GEMINI_KEY){echo json_encode(['text'=>'ยังไม่ได้ตั้งค่า GEMINI_KEY ใน config.php']);exit;}
   $lines=array_map(fn($p)=>"{$p['d']} {$p['t']['name']}: ปัจจุบัน {$p['cur']} → แนะนำ {$p['sg']} ({$p['why']})",array_slice($plan,0,28));

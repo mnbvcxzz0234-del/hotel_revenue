@@ -9,7 +9,7 @@ if($_SERVER['REQUEST_METHOD']=='POST'&&csrf_ok()){
    if(!$ok)$msg='ห้องประเภทนี้ไม่เพียงพอในช่วงวันที่เลือก';
    else{$db->prepare('INSERT INTO bookings(guest,room_type_id,checkin,checkout,rooms,rate_per_night) VALUES(?,?,?,?,?,?)')->execute([$_POST['guest'],$tid,$ci,$co,$n,(float)$_POST['rate']]);$msg='บันทึกแล้ว';}}}}
 $types=$db->query('SELECT * FROM room_types')->fetchAll();
-$rows=$db->query("SELECT b.*,r.name tn FROM bookings b JOIN room_types r ON r.id=b.room_type_id WHERE checkout>=CURDATE() ORDER BY checkin LIMIT 100")->fetchAll(); ?>
+$rows=$db->query("SELECT b.*,r.name tn FROM bookings b JOIN room_types r ON r.id=b.room_type_id WHERE checkout>=CURRENT_DATE ORDER BY checkin LIMIT 100")->fetchAll(); ?>
 <?php if($msg):?><p class="bg-amber-100 p-2 rounded mb-3"><?=h($msg)?></p><?php endif;?>
 <form method="post" class="bg-white p-4 rounded-xl shadow grid md:grid-cols-7 gap-2 mb-4"><input type="hidden" name="t" value="<?=csrf()?>">
 <input name="guest" placeholder="ชื่อแขก" class="border p-2 rounded md:col-span-2" required>

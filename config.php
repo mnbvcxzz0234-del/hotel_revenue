@@ -1,9 +1,10 @@
 <?php
 
 session_start();
+ini_set('display_errors', '0');
 
 // กำหนดค่า API Key
-const GEMINI_KEY='AQ.Ab8RN6JKMCa-9wf5MvY0q-KS1VPwDqmR0mLcy5dUuH9SFC_rWQ';
+define('AQ.Ab8RN6LElhx8sT2FdQm8YEuCcvvHQbPQossSyEyni3FBPZMRqQ', getenv('AQ.Ab8RN6LElhx8sT2FdQm8YEuCcvvHQbPQossSyEyni3FBPZMRqQ') ?: '');
 
 function db(){
     static $p;
@@ -29,7 +30,7 @@ function db(){
         }
         
         // เชื่อมต่อด้วย PostgreSQL (Supabase) เสมอเมื่ออยู่บน Cloud
-        $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+        $dsn = "pgsql:host=$host;port=$port;dbname=$dbname;sslmode=require";
         $p = new PDO($dsn, $user, $pass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC

@@ -1,6 +1,7 @@
-วิธีติดตั้ง (XAMPP)
-1. คัดลอกโฟลเดอร์ hotel_revenue ไปไว้ใน htdocs
-2. phpMyAdmin > Import ไฟล์ schema.sql
-3. เปิด http://localhost/hotel_revenue/setup.php (สร้าง admin / admin123) แล้วลบ setup.php
-4. เข้า http://localhost/hotel_revenue/login.php
-5. (ไม่บังคับ) ใส่ GEMINI_KEY ใน config.php เพื่อใช้ปุ่มสรุปด้วย AI
+วิธีติดตั้ง (Render + Supabase PostgreSQL)
+1. Supabase > SQL Editor: รันไฟล์ schema_pg.sql
+2. Supabase > Connect: คัดลอก Session pooler connection string
+3. Render > New Web Service (Runtime: Docker) ชี้ไปที่ repo นี้
+4. ตั้ง Environment: DATABASE_URL (หรือ DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASS), GEMINI_KEY (ไม่บังคับ), SETUP_PASS
+5. เปิด /setup.php หนึ่งครั้งเพื่อสร้าง admin แล้วลบไฟล์ setup.php และตัวแปร SETUP_PASS
+6. เข้าสู่ระบบที่ /login.php ด้วยผู้ใช้ admin

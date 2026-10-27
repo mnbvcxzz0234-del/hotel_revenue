@@ -1,7 +1,7 @@
 <?php require_once 'config.php'; need_login(); $db=db();
 /* ---------- 1) Demand forecast (pickup model, ไม่ใช้ LLM) ---------- */
 $cap=(int)$db->query('SELECT COALESCE(SUM(total_rooms),0) FROM room_types')->fetchColumn();
-$bk=$db->query("SELECT checkin,checkout,rooms,rate_per_night,created_at FROM bookings WHERE status<>'cancelled' AND checkout>=DATE_SUB(CURDATE(),INTERVAL 70 DAY)")->fetchAll();
+$bk=$db->query("SELECT checkin,checkout,rooms,rate_per_night,created_at FROM bookings WHERE status<>'cancelled' AND checkout>=CURRENT_DATE - INTERVAL '70 days'")->fetchAll();
 // ห้องที่ถูกจองสำหรับคืน $d โดยนับเฉพาะการจองที่สร้างก่อนหรือเท่ากับ $asof
 function occ_asof($bk,$d,$asof){$o=0;foreach($bk as $b)if($b['checkin']<=$d&&$b['checkout']>$d&&substr($b['created_at'],0,10)<=$asof)$o+=$b['rooms'];return $o;}
 $today=date('Y-m-d');$F=[];
