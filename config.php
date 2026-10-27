@@ -8,17 +8,14 @@ const GEMINI_KEY='AQ.Ab8RN6JKMCa-9wf5MvY0q-KS1VPwDqmR0mLcy5dUuH9SFC_rWQ';
 function db(){
     static $p;
     if(!$p) {
-        // ตรวจสอบว่ามี Environment Variable (DATABASE_URL) จาก Render หรือไม่
-        $db_url = getenv('DATABASE_URL');
+        // เช็คว่ามีค่า DB_HOST หรือไม่ (สำหรับรันบน Render ใช้ PostgreSQL)
+        $host = getenv('DB_HOST');
         
-        if ($db_url) {
-            // สำหรับต่อกับ Cloud Database (Supabase / PostgreSQL) บน Render
-            $dbopts = parse_url($db_url);
-            $host = $dbopts['host'] ?? '';
-            $port = $dbopts['port'] ?? '5432';
-            $dbname = ltrim($dbopts['path'] ?? '', '/');
-            $user = $dbopts['user'] ?? '';
-            $pass = $dbopts['pass'] ?? '';
+        if ($host) {
+            $port = getenv('DB_PORT') ?: '5432';
+            $dbname = getenv('DB_NAME') ?: 'postgres';
+            $user = getenv('DB_USER') ?: 'postgres';
+            $pass = getenv('DB_PASS');
             
             $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
             $p = new PDO($dsn, $user, $pass, [
