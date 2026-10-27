@@ -1,6 +1,6 @@
 <?php
 
-header('Content-Type: application/json; charset=utf-8');
+//header('Content-Type: application/json; charset=utf-8');
 
 session_start();
 ini_set('display_errors', '0');
