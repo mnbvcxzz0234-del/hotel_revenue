@@ -13,12 +13,12 @@ function db(){
         
         if ($db_url) {
             // สำหรับต่อกับ Cloud Database (Supabase / PostgreSQL) บน Render
-            $parsed = parse_url($db_url);
-            $host = $parsed['host'] ?? '';
-            $port = $parsed['port'] ?? '5432';
-            $dbname = ltrim($parsed['path'] ?? '', '/');
-            $user = $parsed['user'] ?? '';
-            $pass = $parsed['pass'] ?? '';
+            $dbopts = parse_url($db_url);
+            $host = $dbopts['host'] ?? '';
+            $port = $dbopts['port'] ?? '5432';
+            $dbname = ltrim($dbopts['path'] ?? '', '/');
+            $user = $dbopts['user'] ?? '';
+            $pass = $dbopts['pass'] ?? '';
             
             $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
             $p = new PDO($dsn, $user, $pass, [
@@ -26,7 +26,7 @@ function db(){
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
             ]);
         } else {
-            // สำหรับรันเทสบนเครื่องคอมพิวเตอร์ของคุณเอง (Local MySQL เดิม)
+            // สำหรับรันเทสบนเครื่อง (Local MySQL เดิม)
             $db_host = 'localhost';
             $db_name = 'hotel_revenue';
             $db_user = 'root';
