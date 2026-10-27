@@ -8,29 +8,32 @@ const GEMINI_KEY='AQ.Ab8RN6JKMCa-9wf5MvY0q-KS1VPwDqmR0mLcy5dUuH9SFC_rWQ';
 function db(){
     static $p;
     if(!$p) {
+        // ดึงค่าจาก Environment Variables ของ Render ตรงๆ
         $host = getenv('DB_HOST');
         $port = getenv('DB_PORT') ?: '5432';
         $dbname = getenv('DB_NAME') ?: 'postgres';
         $user = getenv('DB_USER') ?: 'postgres';
         $pass = getenv('DB_PASS');
         
-        if ($host) {
-            $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-            $p = new PDO($dsn, $user, $pass, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-            ]);
-        } else {
-            $db_host = 'localhost';
-            $db_name = 'hotel_revenue';
-            $db_user = 'root';
-            $db_pass = '';
-            
-            $p = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-            ]);
+        // ถ้าไม่มีการตั้งค่า DB_HOST ให้ลองดึงจาก DATABASE_URL เผื่อไว้
+        if (!$host) {
+            $db_url = getenv('DATABASE_URL');
+            if ($db_url) {
+                $dbopts = parse_url($db_url);
+                $host = $dbopts['host'] ?? '';
+                $port = $dbopts['port'] ?? '5432';
+                $dbname = ltrim($dbopts['path'] ?? '', '/');
+                $user = $dbopts['user'] ?? '';
+                $pass = $dbopts['pass'] ?? '';
+            }
         }
+        
+        // เชื่อมต่อด้วย PostgreSQL (Supabase) เสมอเมื่ออยู่บน Cloud
+        $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+        $p = new PDO($dsn, $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
     }
     return $p;
 }
