@@ -1,13 +1,14 @@
 <?php
-
-//header('Content-Type: application/json; charset=utf-8');
-
-session_start();
-ini_set('display_errors', '0');
-
-// กำหนดค่า API Key
-define('AQ.Ab8RN6LElhx8sT2FdQm8YEuCcvvHQbPQossSyEyni3FBPZMRqQ', getenv('AQ.Ab8RN6LElhx8sT2FdQm8YEuCcvvHQbPQossSyEyni3FBPZMRqQ') ?: '');
-
+header('Content-Type: application/json; charset=utf-8');
+try {
+    $key = getenv('GEMINI_API_KEY');
+    if (!$key) throw new Exception('ไม่ได้ตั้งค่า GEMINI_API_KEY');
+    // ... เรียก Gemini ด้วย curl ...
+    echo json_encode(['ok' => true, 'summary' => $summary]);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+}
 function db(){
     static $p;
     if(!$p) {
