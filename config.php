@@ -1,14 +1,9 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-try {
-    $key = getenv('GEMINI_API_KEY');
-    if (!$key) throw new Exception('ไม่ได้ตั้งค่า GEMINI_API_KEY');
-    // ... เรียก Gemini ด้วย curl ...
-    echo json_encode(['ok' => true, 'summary' => $summary]);
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+define('GEMINI_KEY', getenv('GEMINI_API_KEY') ?: '');
+define('GEMINI_MODEL', getenv('GEMINI_MODEL') ?: 'gemini-3.8-flash');
+
 function db(){
     static $p;
     if(!$p) {
@@ -18,7 +13,7 @@ function db(){
         $dbname = getenv('DB_NAME') ?: 'postgres';
         $user = getenv('DB_USER') ?: 'postgres';
         $pass = getenv('DB_PASS');
-        
+
         // ถ้าไม่มีการตั้งค่า DB_HOST ให้ลองดึงจาก DATABASE_URL เผื่อไว้
         if (!$host) {
             $db_url = getenv('DATABASE_URL');
@@ -31,7 +26,7 @@ function db(){
                 $pass = $dbopts['pass'] ?? '';
             }
         }
-        
+
         // เชื่อมต่อด้วย PostgreSQL (Supabase) เสมอเมื่ออยู่บน Cloud
         $dsn = "pgsql:host=$host;port=$port;dbname=$dbname;sslmode=require";
         $p = new PDO($dsn, $user, $pass, [
@@ -69,7 +64,7 @@ function stats($from, $days){
     $st->execute([$to, $from]);
     $bk = $st->fetchAll();
     $out = [];
-    
+
     for($i = 0; $i < $days; $i++){
         $d = date('Y-m-d', strtotime("$from +$i day"));
         $o = 0; $r = 0; $bt = [];
@@ -91,24 +86,24 @@ function suggest($t, $d, $sold, $comp){
     $why = [];
     $f = $p >= 90 ? .25 : ($p >= 75 ? .15 : ($p >= 60 ? .07 : ($p >= 40 ? 0 : ($p >= 20 ? -.07 : -.15))));
     $why[] = 'เต็ม ' . round($p) . '%';
-    
+
     if(in_array(date('N', strtotime($d)), [5, 6])){
         $f += .08;
         $why[] = 'คืนวันหยุด';
     }
-    
+
     $lead = (strtotime($d) - strtotime(date('Y-m-d'))) / 86400;
     if($lead <= 3 && $p < 50){
         $f -= .05;
         $why[] = 'ใกล้วันเข้าพัก ห้องยังว่าง';
     }
-    
+
     $x = $t['base_rate'] * (1 + $f);
     if($comp){
         $x = .7 * $x + .3 * $comp;
         $why[] = 'อิงคู่แข่งเฉลี่ย ' . number_format($comp);
     }
-    
+
     $x = round(min($t['max_rate'], max($t['min_rate'], $x)) / 10) * 10;
     return [$x, implode(' · ', $why)];
 }
