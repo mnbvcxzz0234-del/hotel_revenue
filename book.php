@@ -3,7 +3,7 @@
 // คำขอจะเป็นสถานะ "รอยืนยัน" ยังไม่ล็อกห้อง เจ้าหน้าที่ยืนยันในหน้า bookings.php
 require_once 'config.php'; require_once 'booking_lib.php';
 class PubErr extends Exception {}
-$db = db(); $today = date('Y-m-d');
+$db = db(); $today = date('Y-m-d'); $me = cust($db);
 $hotel = getenv('HOTEL_NAME') ?: 'โรงแรมของเรา'; $hotelTel = getenv('HOTEL_PHONE') ?: '';
 const MAX_ROOMS = 5; const MAX_NIGHTS = 30; const HOURLY_LIMIT = 5; const PENDING_CAP = 200;
 
@@ -24,6 +24,7 @@ function client_ip() {
 $ci = (string)($_POST['ci'] ?? $_GET['ci'] ?? ''); $co = (string)($_POST['co'] ?? $_GET['co'] ?? ''); $n = (int)($_POST['n'] ?? $_GET['n'] ?? 1);
 $errs = []; $trackRes = null; $trackErr = '';
 $pv = ['guest'=>'','phone'=>'','email'=>'','note'=>'','type'=>0];
+if ($me) $pv = ['guest'=>$me['name'],'phone'=>$me['phone'],'email'=>$me['email'],'note'=>'','type'=>0];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $a = $_POST['a'] ?? '';
@@ -49,8 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($e = rooms_error($db, $t['id'], (int)$t['total_rooms'], $ci, $co, $n)) throw new PubErr($e . ' กรุณาเลือกวันหรือห้องอื่น');
                 $rate = round(quote($db, $t, $ci, $co, $n) / (nights($ci, $co) * $n), 2);   // ราคาเฉลี่ย/ห้อง/คืน คำนวณฝั่งเซิร์ฟเวอร์เสมอ
                 $ref = strtoupper(bin2hex(random_bytes(4))); $now = date('Y-m-d H:i:s');
-                $ins = $db->prepare("INSERT INTO bookings(guest,room_type_id,checkin,checkout,rooms,rate_per_night,status,channel,created_at,phone,email,note,consent_at,ref,ip) VALUES(?,?,?,?,?,?,'pending','web',?,?,?,?,?,?,?) RETURNING id");
-                $ins->execute([$pv['guest'], $t['id'], $ci, $co, $n, $rate, $now, $pv['phone'], $pv['email'] ?: null, $pv['note'] ?: null, $now, $ref, $ip ?: null]);
+                $ins = $db->prepare("INSERT INTO bookings(guest,room_type_id,checkin,checkout,rooms,rate_per_night,status,channel,created_at,phone,email,note,consent_at,ref,ip,customer_id) VALUES(?,?,?,?,?,?,'pending','web',?,?,?,?,?,?,?,?) RETURNING id");
+                $ins->execute([$pv['guest'], $t['id'], $ci, $co, $n, $rate, $now, $pv['phone'], $pv['email'] ?: null, $pv['note'] ?: null, $now, $ref, $ip ?: null, $me['id'] ?? null]);
                 log_b($db, (int)$ins->fetchColumn(), 'guest_request', "ref $ref", 'guest');
                 $db->commit(); header('Location: book.php?done=' . $ref); exit;
             } catch (Throwable $e) {
@@ -91,7 +92,8 @@ $in = 'border p-2 rounded w-full'; $lb = 'block text-xs text-slate-500 mb-1';
 ?><!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>จองห้องพัก · <?= h($hotel) ?></title><script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-slate-100 text-slate-800 min-h-screen">
-<header class="bg-indigo-700 text-white px-4 py-4"><div class="max-w-2xl mx-auto"><div class="text-xl font-bold">🏨 <?= h($hotel) ?></div><div class="text-sm opacity-80">จองห้องพักออนไลน์</div></div></header>
+<header class="bg-indigo-700 text-white px-4 py-4"><div class="max-w-2xl mx-auto flex items-center gap-3 flex-wrap"><div><div class="text-xl font-bold">🏨 <?= h($hotel) ?></div><div class="text-sm opacity-80">จองห้องพักออนไลน์</div></div>
+<div class="ml-auto flex items-center gap-3 text-sm"><?php if ($me): ?><a href="account.php" class="underline">บัญชีของฉัน</a><form method="post" action="customer_logout.php" class="inline"><input type="hidden" name="t" value="<?= csrf() ?>"><button class="opacity-80 hover:underline">ออกจากระบบ</button></form><?php else: ?><a href="customer_login.php?next=book.php" class="underline">เข้าสู่ระบบ</a><a href="customer_register.php" class="bg-white text-indigo-700 px-3 py-1 rounded">สมัครสมาชิก</a><?php endif; ?></div></div></header>
 <main class="max-w-2xl mx-auto p-4 space-y-4">
 
 <?php if ($doneRef): ?>

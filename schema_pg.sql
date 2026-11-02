@@ -12,6 +12,19 @@ CREATE TABLE IF NOT EXISTS room_types(
   min_rate NUMERIC(10,2),
   max_rate NUMERIC(10,2)
 );
+CREATE TABLE IF NOT EXISTS customers(
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(120) NOT NULL,
+  phone VARCHAR(30) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  consent_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  failed_count INT NOT NULL DEFAULT 0,
+  locked_until TIMESTAMP,
+  active BOOLEAN NOT NULL DEFAULT TRUE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS customers_email ON customers(lower(email));
 CREATE TABLE IF NOT EXISTS bookings(
   id SERIAL PRIMARY KEY,
   guest VARCHAR(120),
@@ -28,12 +41,14 @@ CREATE TABLE IF NOT EXISTS bookings(
   consent_at TIMESTAMP,
   ref VARCHAR(12),
   ip VARCHAR(45),
+  customer_id INT REFERENCES customers(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT bookings_dates_ok CHECK (checkout > checkin)
 );
 CREATE INDEX IF NOT EXISTS bookings_dates ON bookings(checkin, checkout);
 CREATE UNIQUE INDEX IF NOT EXISTS bookings_ref ON bookings(ref) WHERE ref IS NOT NULL;
 CREATE INDEX IF NOT EXISTS bookings_ip_created ON bookings(ip, created_at);
+CREATE INDEX IF NOT EXISTS bookings_customer ON bookings(customer_id);
 CREATE TABLE IF NOT EXISTS booking_log(
   id SERIAL PRIMARY KEY,
   booking_id INT,

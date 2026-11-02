@@ -43,3 +43,16 @@ function quote($db, $t, $ci, $co, $n) {
     for ($i = 0, $N = nights($ci, $co); $i < $N; $i++) { $d = date('Y-m-d', strtotime("$ci +$i day")); $tot += $m[$d] ?? (float)$t['base_rate']; }
     return $tot * $n;
 }
+
+// ลูกค้าที่ล็อกอินอยู่ (ใช้ session key "cid" แยกจากผู้ดูแล "uid") คืน null ถ้าไม่ได้ล็อกอิน
+function cust($db) {
+    static $c = false; if ($c !== false) return $c; $c = null;
+    if (!empty($_SESSION['cid'])) {
+        $s = $db->prepare('SELECT * FROM customers WHERE id=? AND active'); $s->execute([(int)$_SESSION['cid']]); $c = $s->fetch() ?: null;
+        if (!$c) unset($_SESSION['cid']);
+    }
+    return $c;
+}
+function need_cust($db) {
+    if (!cust($db)) { header('Location: customer_login.php?next=' . urlencode(basename($_SERVER['PHP_SELF']))); exit; }
+}

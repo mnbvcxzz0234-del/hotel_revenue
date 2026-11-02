@@ -3,6 +3,6 @@
 <title>AI Hotel Revenue Manager</title><script src="https://cdn.tailwindcss.com"></script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head>
 <body class="bg-slate-100 text-slate-800"><nav class="bg-indigo-700 text-white px-4 py-3 flex gap-4 items-center flex-wrap">
 <b>🏨 AI Hotel Revenue Manager</b>
-<?php foreach(['index.php'=>'แดชบอร์ด','bookings.php'=>'การจอง','ai.php'=>'AI แนะนำราคา','settings.php'=>'ตั้งค่า'] as $u=>$n): ?>
+<?php foreach(['index.php'=>'แดชบอร์ด','bookings.php'=>'การจอง','ai.php'=>'AI แนะนำราคา','customers.php'=>'ลูกค้า','settings.php'=>'ตั้งค่า'] as $u=>$n): ?>
 <a href="<?=$u?>" class="<?=$cur==$u?'underline font-semibold':'opacity-80'?>"><?=$n?><?php if($u=='bookings.php'&&$pend):?> <span class="bg-amber-400 text-slate-900 text-xs px-1.5 rounded-full"><?=$pend?></span><?php endif;?></a><?php endforeach; ?>
 <a href="logout.php" class="ml-auto text-sm opacity-80">ออกจากระบบ (<?=h($_SESSION['user'])?>)</a></nav><main class="p-4 max-w-6xl mx-auto">
