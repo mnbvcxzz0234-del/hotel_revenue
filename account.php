@@ -26,14 +26,14 @@ $q = $db->prepare('SELECT b.*, r.name tn FROM bookings b JOIN room_types r ON r.
 $q->execute([$me['id']]); $rows = $q->fetchAll();
 $stTxt = ['pending'=>'รอโรงแรมยืนยัน','confirmed'=>'ยืนยันแล้ว','checked_in'=>'เข้าพักแล้ว','completed'=>'เสร็จสิ้น','no_show'=>'ไม่มาเข้าพัก','cancelled'=>'ยกเลิก'];
 $bd = ['pending'=>'bg-purple-100 text-purple-700','confirmed'=>'bg-blue-100 text-blue-700','checked_in'=>'bg-green-100 text-green-700','completed'=>'bg-slate-200 text-slate-700','no_show'=>'bg-amber-100 text-amber-700','cancelled'=>'bg-red-100 text-red-700'];
-$in = 'border p-2 rounded w-full'; $lb = 'block text-xs text-slate-500 mb-1';
+$in = 'border border-sky-100 bg-sky-50/50 p-2.5 rounded-xl w-full'; $lb = 'block text-xs text-slate-500 mb-1';
 pub_top('บัญชีของฉัน'); ?>
 <?php if ($fl): ?><div class="<?= $fl[1] ? 'bg-green-100' : 'bg-red-100' ?> p-3 rounded text-sm"><?= h($fl[0]) ?></div><?php endif; ?>
-<div class="bg-white p-5 rounded-xl shadow flex items-center gap-3">
+<div class="card p-5 flex items-center gap-3">
   <div class="flex-1"><div class="font-bold"><?= h($me['name']) ?></div><div class="text-sm text-slate-500"><?= h($me['email']) ?> · <?= h($me['phone']) ?></div></div>
-  <a href="book.php" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm">จองห้องพัก</a>
+  <a href="book.php" class="btn px-4 py-2 rounded text-sm">จองห้องพัก</a>
 </div>
-<div class="bg-white p-5 rounded-xl shadow space-y-3">
+<div class="card p-5 space-y-3">
   <h2 class="font-semibold">การจองของฉัน</h2>
   <?php if (!$rows): ?><p class="text-sm text-slate-500">ยังไม่มีรายการจอง</p><?php endif; ?>
   <?php foreach ($rows as $r): $nn = nights($r['checkin'], $r['checkout']); ?>
@@ -47,10 +47,10 @@ pub_top('บัญชีของฉัน'); ?>
   </div>
   <?php endforeach; ?>
 </div>
-<details class="bg-white p-5 rounded-xl shadow"><summary class="cursor-pointer font-semibold">เปลี่ยนรหัสผ่าน</summary>
+<details class="card p-5"><summary class="cursor-pointer font-semibold">เปลี่ยนรหัสผ่าน</summary>
   <form method="post" class="grid gap-3 mt-3"><input type="hidden" name="t" value="<?= csrf() ?>"><input type="hidden" name="a" value="password">
     <div><label class="<?= $lb ?>">รหัสผ่านเดิม</label><input type="password" name="cur" class="<?= $in ?>" required autocomplete="current-password"></div>
     <div class="grid grid-cols-2 gap-3"><div><label class="<?= $lb ?>">รหัสผ่านใหม่ (8 ตัวขึ้นไป)</label><input type="password" name="new" class="<?= $in ?>" required autocomplete="new-password"></div>
     <div><label class="<?= $lb ?>">ยืนยันรหัสผ่านใหม่</label><input type="password" name="new2" class="<?= $in ?>" required autocomplete="new-password"></div></div>
-    <button class="border p-2 rounded">บันทึกรหัสผ่านใหม่</button></form></details>
+    <button class="border border-sky-100 bg-sky-50/50 p-2.5 rounded-xl">บันทึกรหัสผ่านใหม่</button></form></details>
 <?php pub_bottom();

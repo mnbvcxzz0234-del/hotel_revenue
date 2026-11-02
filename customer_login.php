@@ -24,15 +24,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-$in = 'border p-2 rounded w-full'; $lb = 'block text-xs text-slate-500 mb-1';
+$in = 'border border-sky-100 bg-sky-50/50 p-2.5 rounded-xl w-full'; $lb = 'block text-xs text-slate-500 mb-1';
 pub_top('เข้าสู่ระบบ'); ?>
-<form method="post" class="bg-white p-5 rounded-xl shadow space-y-3">
+<form method="post" class="card p-5 space-y-3">
   <h1 class="text-lg font-bold">เข้าสู่ระบบ</h1>
   <?php if ($err): ?><div class="bg-red-100 p-3 rounded text-sm"><?= h($err) ?></div><?php endif; ?>
   <input type="hidden" name="t" value="<?= csrf() ?>"><input type="hidden" name="next" value="<?= h($next) ?>">
   <div><label class="<?= $lb ?>">อีเมล</label><input type="email" name="email" value="<?= h($email) ?>" class="<?= $in ?>" required autofocus autocomplete="email"></div>
   <div><label class="<?= $lb ?>">รหัสผ่าน</label><input type="password" name="password" class="<?= $in ?>" required autocomplete="current-password"></div>
-  <button class="bg-indigo-600 text-white px-4 py-3 rounded w-full font-semibold">เข้าสู่ระบบ</button>
-  <p class="text-sm text-center text-slate-500">ยังไม่มีบัญชี? <a href="customer_register.php" class="text-indigo-700 underline">สมัครสมาชิก</a><br>ลืมรหัสผ่าน? กรุณาติดต่อโรงแรมเพื่อขอรหัสผ่านใหม่</p>
+  <button class="btn px-4 py-3 rounded w-full font-semibold">เข้าสู่ระบบ</button>
+  <p class="text-sm text-center text-slate-500">ยังไม่มีบัญชี? <a href="customer_register.php" class="text-[#4a9fd8] underline">สมัครสมาชิก</a><br>ลืมรหัสผ่าน? กรุณาติดต่อโรงแรมเพื่อขอรหัสผ่านใหม่</p>
 </form>
 <?php pub_bottom();

@@ -32,9 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-$in = 'border p-2 rounded w-full'; $lb = 'block text-xs text-slate-500 mb-1';
+$in = 'border border-sky-100 bg-sky-50/50 p-2.5 rounded-xl w-full'; $lb = 'block text-xs text-slate-500 mb-1';
 pub_top('สมัครสมาชิก'); ?>
-<form method="post" class="bg-white p-5 rounded-xl shadow space-y-3">
+<form method="post" class="card p-5 space-y-3">
   <h1 class="text-lg font-bold">สมัครสมาชิก</h1>
   <?php if ($errs): ?><div class="bg-red-100 p-3 rounded text-sm"><?php foreach ($errs as $e): ?><div>• <?= h($e) ?></div><?php endforeach; ?></div><?php endif; ?>
   <input type="hidden" name="t" value="<?= csrf() ?>">
@@ -47,7 +47,7 @@ pub_top('สมัครสมาชิก'); ?>
   </div>
   <div style="position:absolute;left:-9999px" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off"></div>
   <label class="flex gap-2 text-xs text-slate-600"><input type="checkbox" name="consent" value="1" required class="mt-0.5"><span>ข้าพเจ้ายินยอมให้เก็บและใช้ชื่อ อีเมล และเบอร์โทร เพื่อสร้างบัญชี ติดต่อ และจัดการการจองของข้าพเจ้า</span></label>
-  <button class="bg-indigo-600 text-white px-4 py-3 rounded w-full font-semibold">สมัครสมาชิก</button>
-  <p class="text-sm text-center text-slate-500">มีบัญชีอยู่แล้ว? <a href="customer_login.php" class="text-indigo-700 underline">เข้าสู่ระบบ</a></p>
+  <button class="btn px-4 py-3 rounded w-full font-semibold">สมัครสมาชิก</button>
+  <p class="text-sm text-center text-slate-500">มีบัญชีอยู่แล้ว? <a href="customer_login.php" class="text-[#4a9fd8] underline">เข้าสู่ระบบ</a></p>
 </form>
 <?php pub_bottom();
