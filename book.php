@@ -1,7 +1,7 @@
 <?php
 // หน้าลูกค้า (ไม่ต้องล็อกอิน): ตรวจห้องว่าง ส่งคำขอจอง และติดตามสถานะ
 // คำขอจะเป็นสถานะ "รอยืนยัน" ยังไม่ล็อกห้อง เจ้าหน้าที่ยืนยันในหน้า bookings.php
-require_once 'config.php'; require_once 'booking_lib.php';
+require_once 'config.php'; require_once 'booking_lib.php'; require_once 'pub_layout.php';
 class PubErr extends Exception {}
 $db = db(); $today = date('Y-m-d'); $me = cust($db);
 $hotel = getenv('HOTEL_NAME') ?: 'โรงแรมของเรา'; $hotelTel = getenv('HOTEL_PHONE') ?: '';
@@ -89,29 +89,49 @@ if (!$doneRef && $ci !== '' && $co !== '') {
 $nn = ($ci && $co && valid_date($ci) && valid_date($co) && $co > $ci) ? nights($ci, $co) : 0;
 $stTxt = ['pending'=>'รอโรงแรมยืนยัน','confirmed'=>'ยืนยันการจองแล้ว','checked_in'=>'เข้าพักแล้ว','completed'=>'เสร็จสิ้น','no_show'=>'ไม่มาเข้าพัก','cancelled'=>'ยกเลิก / โรงแรมไม่สามารถรับจองได้'];
 $in = 'border p-2 rounded w-full'; $lb = 'block text-xs text-slate-500 mb-1';
-?><!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>จองห้องพัก · <?= h($hotel) ?></title><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-slate-100 text-slate-800 min-h-screen">
-<header class="bg-indigo-700 text-white px-4 py-4"><div class="max-w-2xl mx-auto flex items-center gap-3 flex-wrap"><div><div class="text-xl font-bold">🏨 <?= h($hotel) ?></div><div class="text-sm opacity-80">จองห้องพักออนไลน์</div></div>
-<div class="ml-auto flex items-center gap-3 text-sm"><?php if ($me): ?><a href="account.php" class="underline">บัญชีของฉัน</a><form method="post" action="customer_logout.php" class="inline"><input type="hidden" name="t" value="<?= csrf() ?>"><button class="opacity-80 hover:underline">ออกจากระบบ</button></form><?php else: ?><a href="customer_login.php?next=book.php" class="underline">เข้าสู่ระบบ</a><a href="customer_register.php" class="bg-white text-indigo-700 px-3 py-1 rounded">สมัครสมาชิก</a><?php endif; ?></div></div></header>
-<main class="max-w-2xl mx-auto p-4 space-y-4">
+?>
+<?php
+$hero = getenv('HERO_IMAGE_URL') ?: '';
+$heroBg = 'linear-gradient(rgba(0,59,149,.82),rgba(0,59,149,.82))' . ($hero ? ',url(' . h($hero) . ') center/cover' : ',linear-gradient(135deg,#003b95,#006ce4)');
+$seg = 'bg-white rounded flex items-center gap-3 px-3 py-2 min-w-0';
+$sl  = 'block text-xs text-slate-500 leading-tight';
+?>
+<?= pub_head('จองห้องพัก', $hotel) ?>
+<body class="min-h-screen text-slate-800" style="background:#f2f2f2">
+<?= pub_nav($me, $hotel, 'book.php') ?>
+<section style="background:<?= $heroBg ?>" class="text-white">
+  <div class="max-w-5xl mx-auto px-4 pt-16 pb-12">
+    <h1 class="text-4xl font-bold">ที่พัก</h1>
+    <p class="mt-1 font-semibold">ค้นหาห้องพักที่น่าสนใจที่สุดสำหรับท่าน</p>
+    <form method="get" class="mt-6 p-1 rounded-lg flex flex-col md:flex-row gap-1" style="background:#febb02">
+      <div class="<?= $seg ?> md:flex-1"><span class="text-xl">🛏️</span>
+        <div class="min-w-0"><span class="<?= $sl ?>">ที่พัก</span><div class="text-slate-800 truncate"><?= h($hotel) ?></div></div></div>
+      <div class="<?= $seg ?> md:flex-[1.2]"><span class="text-xl">📅</span>
+        <div><span class="<?= $sl ?>">เลือกวันที่</span>
+          <div class="flex items-center gap-2 text-slate-800 font-semibold">
+            <input type="date" name="ci" id="ci" value="<?= h($ci) ?>" min="<?= $today ?>" class="bg-transparent outline-none w-[7.5rem]" required>
+            <span>—</span>
+            <input type="date" name="co" id="co" value="<?= h($co) ?>" min="<?= $today ?>" class="bg-transparent outline-none w-[7.5rem]" required>
+          </div></div></div>
+      <div class="<?= $seg ?> md:flex-1"><span class="text-xl">👤</span>
+        <div class="flex-1"><span class="<?= $sl ?>">เลือกจำนวนห้อง</span>
+          <select name="n" class="bg-transparent outline-none w-full text-slate-800 font-semibold">
+            <?php for ($i = 1; $i <= MAX_ROOMS; $i++): ?><option value="<?= $i ?>" <?= max(1, $n) == $i ? 'selected' : '' ?>><?= $i ?> ห้อง</option><?php endfor; ?>
+          </select></div></div>
+      <button class="text-white text-lg font-bold px-8 py-3 rounded hover:brightness-110" style="background:#006ce4">ค้นหา</button>
+    </form>
+  </div>
+</section>
+<main class="max-w-3xl mx-auto p-4 space-y-4">
 
 <?php if ($doneRef): ?>
 <div class="bg-white p-6 rounded-xl shadow text-center space-y-2">
   <div class="text-3xl">✅</div><h1 class="text-lg font-bold">ส่งคำขอจองเรียบร้อยแล้ว</h1>
-  <p class="text-sm text-slate-600">รหัสการจองของคุณ</p><div class="text-3xl font-mono font-bold tracking-widest text-indigo-700"><?= h($doneRef) ?></div>
+  <p class="text-sm text-slate-600">รหัสการจองของคุณ</p><div class="text-3xl font-mono font-bold tracking-widest text-[#006ce4]"><?= h($doneRef) ?></div>
   <p class="text-sm text-slate-600">โปรดจดรหัสนี้ไว้ ทางโรงแรมจะติดต่อกลับทางเบอร์โทรที่ให้ไว้เพื่อยืนยันการจอง<br><b>คำขอนี้ยังไม่ใช่การยืนยัน</b>และยังไม่ได้ชำระเงินใด ๆ<?= $hotelTel ? '<br>สอบถามด่วน โทร ' . h($hotelTel) : '' ?></p>
-  <a href="book.php" class="inline-block mt-2 text-indigo-700 underline text-sm">กลับหน้าจอง</a>
+  <a href="book.php" class="inline-block mt-2 text-[#006ce4] underline text-sm">กลับหน้าจอง</a>
 </div>
 <?php else: ?>
-
-<form method="get" class="bg-white p-4 rounded-xl shadow grid grid-cols-2 gap-3">
-  <div class="col-span-2 font-semibold">1. เลือกวันเข้าพัก</div>
-  <div><label class="<?= $lb ?>">เช็กอิน</label><input type="date" name="ci" id="ci" value="<?= h($ci) ?>" min="<?= $today ?>" class="<?= $in ?>" required></div>
-  <div><label class="<?= $lb ?>">เช็กเอาต์</label><input type="date" name="co" id="co" value="<?= h($co) ?>" min="<?= $today ?>" class="<?= $in ?>" required></div>
-  <div class="col-span-2 sm:col-span-1"><label class="<?= $lb ?>">จำนวนห้อง</label><input type="number" name="n" value="<?= max(1, $n) ?>" min="1" max="<?= MAX_ROOMS ?>" class="<?= $in ?>" required></div>
-  <div class="col-span-2 sm:col-span-1 flex items-end"><button class="bg-indigo-600 text-white p-2 rounded w-full">ตรวจห้องว่าง</button></div>
-</form>
 
 <?php if ($errs): ?><div class="bg-red-100 p-3 rounded text-sm"><?php foreach ($errs as $e): ?><div>• <?= h($e) ?></div><?php endforeach; ?></div><?php endif; ?>
 <?php if ($searchErr): ?><div class="bg-amber-100 p-3 rounded text-sm"><?= h($searchErr) ?></div><?php endif; ?>
@@ -119,12 +139,12 @@ $in = 'border p-2 rounded w-full'; $lb = 'block text-xs text-slate-500 mb-1';
 <?php if ($results !== null): ?>
   <?php if (!$results): ?><div class="bg-amber-100 p-3 rounded text-sm">ขออภัย ไม่มีห้องว่างตามที่เลือก ลองเปลี่ยนวันที่หรือจำนวนห้อง<?= $hotelTel ? ' หรือโทร ' . h($hotelTel) : '' ?></div>
   <?php else: ?>
-  <form method="post" class="bg-white p-4 rounded-xl shadow space-y-3">
+  <form method="post" class="bg-white p-4 rounded-lg border border-slate-200 space-y-3">
     <input type="hidden" name="t" value="<?= csrf() ?>"><input type="hidden" name="a" value="request">
     <input type="hidden" name="ci" value="<?= h($ci) ?>"><input type="hidden" name="co" value="<?= h($co) ?>"><input type="hidden" name="n" value="<?= $n ?>">
     <div class="font-semibold">2. เลือกห้อง <span class="text-sm font-normal text-slate-500">(<?= dth($ci) ?> – <?= dth($co) ?> · <?= $nn ?> คืน · <?= $n ?> ห้อง)</span></div>
     <?php foreach ($results as $i => $r): ?>
-    <label class="flex items-center gap-3 border rounded-lg p-3 cursor-pointer has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+    <label class="flex items-center gap-3 border rounded-lg p-3 cursor-pointer has-[:checked]:border-[#006ce4] has-[:checked]:bg-blue-50">
       <input type="radio" name="type" value="<?= $r['t']['id'] ?>" <?= ($pv['type'] ? $pv['type'] == $r['t']['id'] : $i === 0) ? 'checked' : '' ?> required>
       <div class="flex-1"><div class="font-semibold"><?= h($r['t']['name']) ?></div>
         <div class="text-xs text-slate-500"><?= $r['left'] <= 3 ? 'เหลือ <b class="text-red-600">' . $r['left'] . '</b> ห้อง' : 'ห้องว่างเพียงพอ' ?></div></div>
@@ -143,7 +163,7 @@ $in = 'border p-2 rounded w-full'; $lb = 'block text-xs text-slate-500 mb-1';
     <div style="position:absolute;left:-9999px" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off"></div>
     <label class="flex gap-2 text-xs text-slate-600"><input type="checkbox" name="consent" value="1" required class="mt-0.5">
       <span>ข้าพเจ้ายินยอมให้ <?= h($hotel) ?> เก็บและใช้ชื่อ เบอร์โทร และอีเมลของข้าพเจ้าเพื่อติดต่อและยืนยันการจองนี้เท่านั้น</span></label>
-    <button class="bg-indigo-600 text-white px-4 py-3 rounded w-full font-semibold">ส่งคำขอจอง</button>
+    <button class="text-white px-4 py-3 rounded w-full font-semibold hover:brightness-110" style="background:#006ce4">ส่งคำขอจอง</button>
     <p class="text-xs text-slate-500">การส่งคำขอยังไม่ใช่การยืนยันการจองและไม่มีการเรียกเก็บเงิน</p>
   </form>
   <?php endif; ?>
