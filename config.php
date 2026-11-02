@@ -1,7 +1,8 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
+date_default_timezone_set('Asia/Bangkok');
 
-define('GEMINI_KEY', getenv('GEMINI_API_KEY') ?: 'AQ.Ab8RN6LElhx8sT2FdQm8YEuCcvvHQbPQossSyEyni3FBPZMRqQ');
+define('GEMINI_KEY', getenv('GEMINI_API_KEY') ?: (getenv('GEMINI_KEY') ?: ''));
 define('GEMINI_MODEL', getenv('GEMINI_MODEL') ?: 'gemini-3.8-flash');
 
 function db(){
@@ -60,7 +61,7 @@ function csrf_ok(){
 function stats($from, $days){
     $to = date('Y-m-d', strtotime("$from +$days day"));
     $cap = (int)db()->query('SELECT COALESCE(SUM(total_rooms),0) FROM room_types')->fetchColumn();
-    $st = db()->prepare("SELECT * FROM bookings WHERE status<>'cancelled' AND checkin<? AND checkout>?");
+    $st = db()->prepare("SELECT * FROM bookings WHERE status NOT IN ('cancelled','no_show') AND checkin<? AND checkout>?");
     $st->execute([$to, $from]);
     $bk = $st->fetchAll();
     $out = [];
