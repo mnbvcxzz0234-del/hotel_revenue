@@ -1,8 +1,7 @@
-<?php require_once 'config.php'; need_login(); $cur=basename($_SERVER['PHP_SELF']); $pend=(int)db()->query("SELECT COUNT(*) FROM bookings WHERE status='pending'")->fetchColumn(); ?>
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Hotel Revenue Manager</title><script src="https://cdn.tailwindcss.com"></script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head>
-<body class="bg-slate-100 text-slate-800"><nav class="bg-indigo-700 text-white px-4 py-3 flex gap-4 items-center flex-wrap">
-<b>🏨 AI Hotel Revenue Manager</b>
-<?php foreach(['index.php'=>'แดชบอร์ด','bookings.php'=>'การจอง','ai.php'=>'AI แนะนำราคา','customers.php'=>'ลูกค้า','settings.php'=>'ตั้งค่า'] as $u=>$n): ?>
-<a href="<?=$u?>" class="<?=$cur==$u?'underline font-semibold':'opacity-80'?>"><?=$n?><?php if($u=='bookings.php'&&$pend):?> <span class="bg-amber-400 text-slate-900 text-xs px-1.5 rounded-full"><?=$pend?></span><?php endif;?></a><?php endforeach; ?>
-<a href="logout.php" class="ml-auto text-sm opacity-80">ออกจากระบบ (<?=h($_SESSION['user'])?>)</a></nav><main class="p-4 max-w-6xl mx-auto">
+<?php require_once 'config.php'; require_once 'theme.php'; need_login(); $cur=basename($_SERVER['PHP_SELF']);
+$pend=(int)db()->query("SELECT COUNT(*) FROM bookings WHERE status='pending'")->fetchColumn(); ?>
+<!doctype html><html lang="th"><head><?=theme_head('AI Hotel Revenue Manager')?><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head>
+<body class="min-h-screen"><?=theme_nav('Revenue Manager','ระบบบริหารราคาและรายได้โรงแรม',
+ ['index.php'=>'แดชบอร์ด','bookings.php'=>'การจอง','ai.php'=>'AI แนะนำราคา','insights.php'=>'พยากรณ์','customers.php'=>'ลูกค้า','settings.php'=>'ตั้งค่า'],$cur,
+ '<a href="home.php" class="hidden md:block" style="color:var(--mute)">ดูหน้าลูกค้า ↗</a><span class="flex items-center gap-2 border rounded-xl px-3 py-1.5 font-medium" style="border-color:var(--line)"><span class="w-7 h-7 rounded-lg grid place-items-center" style="background:var(--tint);color:var(--p)">'.h(mb_substr($_SESSION['user'],0,1)).'</span>'.h($_SESSION['user']).'</span><a href="logout.php" style="color:var(--mute)">ออกจากระบบ</a>',
+ ['bookings.php'=>$pend])?><main class="p-4 max-w-6xl mx-auto mt-4">
