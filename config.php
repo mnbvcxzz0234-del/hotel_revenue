@@ -61,7 +61,7 @@ function csrf_ok(){
 function stats($from, $days){
     $to = date('Y-m-d', strtotime("$from +$days day"));
     $cap = (int)db()->query('SELECT COALESCE(SUM(total_rooms),0) FROM room_types')->fetchColumn();
-    $st = db()->prepare("SELECT * FROM bookings WHERE status NOT IN ('cancelled','no_show') AND checkin<? AND checkout>?");
+    $st = db()->prepare("SELECT * FROM bookings WHERE status NOT IN ('cancelled','no_show','pending') AND checkin<? AND checkout>?");
     $st->execute([$to, $from]);
     $bk = $st->fetchAll();
     $out = [];

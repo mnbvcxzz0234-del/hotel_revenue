@@ -20,12 +20,20 @@ CREATE TABLE IF NOT EXISTS bookings(
   checkout DATE,
   rooms INT DEFAULT 1,
   rate_per_night NUMERIC(10,2),
-  status VARCHAR(20) DEFAULT 'confirmed' CHECK (status IN ('confirmed','checked_in','completed','no_show','cancelled')),
+  status VARCHAR(20) DEFAULT 'confirmed' CHECK (status IN ('pending','confirmed','checked_in','completed','no_show','cancelled')),
   channel VARCHAR(30) NOT NULL DEFAULT 'direct',
+  phone VARCHAR(30),
+  email VARCHAR(120),
+  note TEXT,
+  consent_at TIMESTAMP,
+  ref VARCHAR(12),
+  ip VARCHAR(45),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT bookings_dates_ok CHECK (checkout > checkin)
 );
 CREATE INDEX IF NOT EXISTS bookings_dates ON bookings(checkin, checkout);
+CREATE UNIQUE INDEX IF NOT EXISTS bookings_ref ON bookings(ref) WHERE ref IS NOT NULL;
+CREATE INDEX IF NOT EXISTS bookings_ip_created ON bookings(ip, created_at);
 CREATE TABLE IF NOT EXISTS booking_log(
   id SERIAL PRIMARY KEY,
   booking_id INT,

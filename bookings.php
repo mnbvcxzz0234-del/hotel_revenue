@@ -1,35 +1,10 @@
 <?php
-require_once 'config.php'; need_login(); $db = db();
+require_once 'config.php'; require_once 'booking_lib.php'; need_login(); $db = db();
 
-const CHANNELS = ['direct'=>'จองตรง (โทร/เว็บ)','walkin'=>'Walk-in','booking'=>'Booking.com','agoda'=>'Agoda','expedia'=>'Expedia','other'=>'อื่น ๆ'];
-const STATUS   = ['confirmed'=>'ยืนยันแล้ว','checked_in'=>'เข้าพักอยู่','completed'=>'เช็กเอาต์แล้ว','no_show'=>'ไม่มา','cancelled'=>'ยกเลิก'];
-const ACTIVE   = ['confirmed','checked_in','completed'];            // สถานะที่นับว่าใช้ห้องและมีรายได้
-const NEXT     = ['confirmed'=>['checked_in','no_show','cancelled'],'checked_in'=>['completed','confirmed'],
-                  'completed'=>['checked_in'],'no_show'=>['confirmed'],'cancelled'=>['confirmed']];
 class UE extends Exception {}                                         // ข้อความที่แสดงให้ผู้ใช้เห็นได้
 
 function flash($m, $ok = true, $lines = []) { $_SESSION['flash'] = ['m'=>$m,'ok'=>$ok,'lines'=>$lines]; }
-function nights($ci, $co) { return (int)round((strtotime($co) - strtotime($ci)) / 86400); }
-function valid_date($d) { $x = DateTime::createFromFormat('Y-m-d', (string)$d); return $x && $x->format('Y-m-d') === $d; }
-function dth($d) { return date('d/m/Y', strtotime($d)); }
 function qs($over = []) { $q = array_merge($_GET, $over); unset($q['edit']); return '?' . http_build_query(array_filter($q, fn($v) => $v !== '' && $v !== null)); }
-
-function log_b($db, $id, $act, $detail = '') {
-    $db->prepare('INSERT INTO booking_log(booking_id,action,by_user,detail) VALUES(?,?,?,?)')
-       ->execute([$id, $act, $_SESSION['user'] ?? '', $detail]);
-}
-
-// คืนข้อความ error ถ้าห้องไม่พอในคืนใดคืนหนึ่ง (ไม่นับรายการ $excludeId)
-function rooms_error($db, $tid, $total, $ci, $co, $n, $excludeId = 0) {
-    $st = $db->prepare("SELECT checkin,checkout,rooms FROM bookings WHERE room_type_id=? AND status NOT IN ('cancelled','no_show') AND checkin<? AND checkout>? AND id<>?");
-    $st->execute([$tid, $co, $ci, $excludeId]); $bk = $st->fetchAll();
-    for ($i = 0, $N = nights($ci, $co); $i < $N; $i++) {
-        $d = date('Y-m-d', strtotime("$ci +$i day")); $used = 0;
-        foreach ($bk as $b) if ($b['checkin'] <= $d && $b['checkout'] > $d) $used += $b['rooms'];
-        if ($used + $n > $total) return 'ห้องไม่เพียงพอวันที่ ' . dth($d) . ' (เหลือ ' . max(0, $total - $used) . ' ห้อง)';
-    }
-    return null;
-}
 
 // ตรวจข้อมูลการจอง ต้องเรียกภายใน transaction (ล็อกแถวประเภทห้องกันจองซ้อนพร้อมกัน)
 // คืน [errors[], warnings[assoc], cleaned[]]
@@ -116,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!in_array($to, NEXT[$old['status']] ?? [], true)) throw new UE('เปลี่ยนสถานะนี้ไม่ได้');
             if (in_array($to, ACTIVE) && !in_array($old['status'], ACTIVE)) {   // กู้คืน: ต้องมีห้องว่าง
                 $t = $db->prepare('SELECT * FROM room_types WHERE id=? FOR UPDATE'); $t->execute([$old['room_type_id']]); $t = $t->fetch();
-                if ($e = rooms_error($db, $old['room_type_id'], (int)$t['total_rooms'], $old['checkin'], $old['checkout'], (int)$old['rooms'], $id)) throw new UE('กู้คืนไม่ได้: ' . $e);
+                if ($e = rooms_error($db, $old['room_type_id'], (int)$t['total_rooms'], $old['checkin'], $old['checkout'], (int)$old['rooms'], $id)) throw new UE('ทำรายการไม่ได้: ' . $e);
             }
             $db->prepare('UPDATE bookings SET status=? WHERE id=?')->execute([$to, $id]);
             log_b($db, $id, 'status', $old['status'] . '→' . $to);
@@ -190,7 +165,7 @@ $W = implode(' AND ', $w);
 $orders = ['in_asc'=>'b.checkin ASC, b.id ASC','in_desc'=>'b.checkin DESC, b.id DESC','new'=>'b.id DESC'];
 $sort = isset($orders[$_GET['sort'] ?? '']) ? $_GET['sort'] : 'in_asc';
 
-$act = "b.status NOT IN ('cancelled','no_show')";
+$act = "b.status NOT IN ('cancelled','no_show','pending')";
 $sm = $db->prepare("SELECT COUNT(*) c, COALESCE(SUM(b.rooms*(b.checkout-b.checkin)) FILTER (WHERE $act),0) rn, COALESCE(SUM(b.rooms*(b.checkout-b.checkin)*b.rate_per_night) FILTER (WHERE $act),0) rev FROM bookings b WHERE $W");
 $sm->execute($p); $sum = $sm->fetch();
 $per = 25; $pages = max(1, (int)ceil($sum['c'] / $per)); $page = min($pages, max(1, (int)($_GET['page'] ?? 1)));
@@ -200,13 +175,16 @@ $st->execute($p); $rows = $st->fetchAll();
 $logs = [];
 if ($isEdit && $editId) { $l = $db->prepare('SELECT * FROM booking_log WHERE booking_id=? ORDER BY id DESC LIMIT 10'); $l->execute([$editId]); $logs = $l->fetchAll(); }
 
-$badge = ['confirmed'=>'bg-blue-100 text-blue-700','checked_in'=>'bg-green-100 text-green-700','completed'=>'bg-slate-200 text-slate-700','no_show'=>'bg-amber-100 text-amber-700','cancelled'=>'bg-red-100 text-red-700'];
+$badge = ['pending'=>'bg-purple-100 text-purple-700','confirmed'=>'bg-blue-100 text-blue-700','checked_in'=>'bg-green-100 text-green-700','completed'=>'bg-slate-200 text-slate-700','no_show'=>'bg-amber-100 text-amber-700','cancelled'=>'bg-red-100 text-red-700'];
 function sbtn($id, $to, $label, $cls, $confirm = '') {
     return '<form method="post" class="inline" ' . ($confirm ? 'onsubmit="return confirm(\'' . h($confirm) . '\')"' : '') . '><input type="hidden" name="t" value="' . csrf() . '"><input type="hidden" name="a" value="status"><input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="to" value="' . $to . '"><input type="hidden" name="back" value="' . h(http_build_query($_GET)) . '"><button class="' . $cls . ' hover:underline">' . $label . '</button></form>';
 }
 $in = 'border p-2 rounded w-full'; $lb = 'block text-xs text-slate-500 mb-1';
 include 'header.php'; ?>
 
+<?php $pend = (int)$db->query("SELECT COUNT(*) FROM bookings WHERE status='pending'")->fetchColumn(); if ($pend): ?>
+<a href="bookings.php?status=pending" class="block bg-purple-100 text-purple-800 p-3 rounded mb-3 text-sm">มีคำขอจองจากลูกค้า <b><?= $pend ?></b> รายการรอยืนยัน → กดเพื่อดู</a>
+<?php endif; ?>
 <?php if ($flash): ?>
 <div class="<?= $flash['ok'] ? 'bg-green-100' : 'bg-red-100' ?> p-3 rounded mb-3 text-sm"><?= h($flash['m']) ?>
 <?php if ($flash['lines']): ?><ul class="list-disc ml-5 mt-1 text-xs"><?php foreach ($flash['lines'] as $l): ?><li><?= h($l) ?></li><?php endforeach; ?></ul><?php endif; ?></div>
@@ -253,14 +231,15 @@ include 'header.php'; ?>
 
 <div class="overflow-x-auto"><table class="w-full min-w-[1000px] bg-white rounded-xl shadow text-sm">
 <tr class="text-left bg-slate-50"><th class="p-2">แขก</th><th>ห้อง</th><th>เข้า</th><th>ออก</th><th>คืน</th><th>ห้อง</th><th>ราคา/คืน</th><th>รวม</th><th>ช่องทาง</th><th>จองเมื่อ</th><th>สถานะ</th><th></th></tr>
-<?php foreach ($rows as $r): $dim = in_array($r['status'], ['cancelled', 'no_show']); $tot = $r['nn'] * $r['rooms'] * $r['rate_per_night']; ?>
-<tr class="border-t <?= $dim ? 'opacity-50' : '' ?>"><td class="p-2"><?= h($r['guest']) ?></td><td><?= h($r['tn']) ?></td><td><?= dth($r['checkin']) ?></td><td><?= dth($r['checkout']) ?></td>
+<?php foreach ($rows as $r): $dim = in_array($r['status'], ['cancelled', 'no_show', 'pending']); $tot = $r['nn'] * $r['rooms'] * $r['rate_per_night']; ?>
+<tr class="border-t <?= $dim && $r['status'] != 'pending' ? 'opacity-50' : '' ?> <?= $r['status'] == 'pending' ? 'bg-purple-50' : '' ?>"><td class="p-2"><?= h($r['guest']) ?><?php if (!empty($r['phone']) || !empty($r['email']) || !empty($r['note'])): ?><div class="text-xs text-slate-500"><?= h(trim(($r['phone'] ?? '') . ' ' . ($r['email'] ?? ''))) ?><?= !empty($r['note']) ? ' · ' . h($r['note']) : '' ?></div><?php endif; ?></td><td><?= h($r['tn']) ?></td><td><?= dth($r['checkin']) ?></td><td><?= dth($r['checkout']) ?></td>
 <td><?= $r['nn'] ?></td><td><?= $r['rooms'] ?></td><td>฿<?= number_format($r['rate_per_night']) ?></td><td>฿<?= number_format($tot) ?></td>
 <td><?= h(CHANNELS[$r['channel']] ?? $r['channel']) ?></td><td><?= dth(substr($r['created_at'], 0, 10)) ?></td>
 <td><span class="px-2 py-0.5 rounded text-xs <?= $badge[$r['status']] ?? '' ?>"><?= h(STATUS[$r['status']] ?? $r['status']) ?></span></td>
 <td class="whitespace-nowrap space-x-2 pr-2">
 <?php $s = $r['status'];
-if ($s == 'confirmed') echo sbtn($r['id'], 'checked_in', 'เช็กอิน', 'text-green-700') . sbtn($r['id'], 'no_show', 'ไม่มา', 'text-amber-700', 'ทำเครื่องหมายว่าแขกไม่มา?') . sbtn($r['id'], 'cancelled', 'ยกเลิก', 'text-red-600', 'ยกเลิกการจองของ ' . $r['guest'] . ' ใช่หรือไม่?');
+if ($s == 'pending') echo sbtn($r['id'], 'confirmed', 'ยืนยัน', 'text-green-700 font-semibold') . sbtn($r['id'], 'cancelled', 'ปฏิเสธ', 'text-red-600', 'ปฏิเสธคำขอของ ' . $r['guest'] . ' ใช่หรือไม่?');
+elseif ($s == 'confirmed') echo sbtn($r['id'], 'checked_in', 'เช็กอิน', 'text-green-700') . sbtn($r['id'], 'no_show', 'ไม่มา', 'text-amber-700', 'ทำเครื่องหมายว่าแขกไม่มา?') . sbtn($r['id'], 'cancelled', 'ยกเลิก', 'text-red-600', 'ยกเลิกการจองของ ' . $r['guest'] . ' ใช่หรือไม่?');
 elseif ($s == 'checked_in') echo sbtn($r['id'], 'completed', 'เช็กเอาต์', 'text-slate-700');
 elseif ($s == 'cancelled' || $s == 'no_show') echo sbtn($r['id'], 'confirmed', 'กู้คืน', 'text-blue-700'); ?>
 <a href="?<?= h(http_build_query(array_merge($_GET, ['edit' => $r['id']]))) ?>#bf" class="text-indigo-700 hover:underline">แก้ไข</a>
